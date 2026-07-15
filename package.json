@@ -1,0 +1,31 @@
+{
+  "name": "fullstackopen-part4-blogs",
+  "version": "1.0.0",
+  "description": "Blogs",
+  "homepage": "https://github.com/lucasandersen39/fullstackopen-part4-blogs#readme",
+  "bugs": {
+    "url": "https://github.com/lucasandersen39/fullstackopen-part4-blogs/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucasandersen39/fullstackopen-part4-blogs.git"
+  },
+  "license": "MIT",
+  "author": "Lucas Andersen",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
