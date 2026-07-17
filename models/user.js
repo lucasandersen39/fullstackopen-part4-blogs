@@ -15,7 +15,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         minLength: [3, 'the minium allowed is 3'],
         required: [true, 'the name is required']
-    }
+    },
+    blogs: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Blog'
+        }
+    ]
 })
 
 userSchema.set('toJSON', {
