@@ -6,6 +6,7 @@ const app = require('../app')
 const helper = require('./blogs_test_helper')
 
 const Blog = require('../models/blog')
+const blog = require('../models/blog')
 
 const api = supertest(app)
 
@@ -105,6 +106,29 @@ describe('BLOGS: POST endpoint tests', () => {
             .expect(400)
 
         assert.strictEqual(response.body.error, 'Blog validation failed: author: author is required')
+    })
+})
+
+describe('BLOGS: DELETE endpoint test', () => {
+    test('delete blog success', async () => {
+        const blogsStart = await helper.blogsInDB()
+        const blogHelp = blogsStart[0]
+        await api.delete(`/api/blogs/${blogHelp.id}`).expect(204)
+
+        const blogEnd = await helper.blogsInDB()
+        const titles = blogEnd.map(b => b.title)
+        assert(!titles.includes(blogHelp.title))
+
+        assert.strictEqual(blogEnd.length, helper.blogs_dummy.length - 1)
+    })
+
+    test('delete non existing id, return error', async () => {
+        const nonExistID = await helper.nonExistingId()
+        await api.delete(`/api/blogs/${nonExistID}`).expect(204)
+
+        const blogEnd = await helper.blogsInDB()
+        assert.strictEqual(blogEnd.length, helper.blogs_dummy.length)
+
     })
 })
 

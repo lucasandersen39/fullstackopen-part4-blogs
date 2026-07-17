@@ -1,3 +1,5 @@
+const Blog = require('../models/blog')
+
 const blogs_dummy = [
     {
         title: "assert.deepStrictEqual(actual, expected[, message])",
@@ -13,6 +15,26 @@ const blogs_dummy = [
     }
 ]
 
+const blogsInDB = async () => {
+    const result = await Blog.find({})
+    return result.map(blog => blog.toJSON())
+}
+
+const nonExistingId = async () => {
+    const blog = new Blog({
+        title: 'No exist',
+        author: ' Me',
+        url: 'example.com',
+        likes: 2
+    })
+    await blog.save()
+    await blog.deleteOne()
+
+    return blog._id.toString()
+}
+
 module.exports = {
-    blogs_dummy
+    blogs_dummy,
+    blogsInDB,
+    nonExistingId
 }
