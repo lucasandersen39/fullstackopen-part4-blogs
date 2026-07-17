@@ -15,7 +15,6 @@ describe('BLOGS: GET endpoint tests', () => {
 
     test('unique identifier property of the blog posts is named id', async () => {
         const response = await api.get('/api/blogs')
-        console.log("BODY ", response.body)
         if (response.body.length > 0) {
             assert.ok(response.body[0].id) // id identifier is OK
             assert.strictEqual(response.body[0]._id, undefined) // _id identifier is not define
@@ -46,7 +45,22 @@ describe('BLOGS: POST endpoint tests', () => {
         assert.strictEqual(finalResponse.body.length, initialCount + 1)
 
         const titles = finalResponse.body.map(r => r.title)
-        assert.ok(titles.includes('async/await'))
+        assert.ok(titles.includes('Entorno de prueba'))
+    })
+
+    test('If the likes property is missing, It set with default 0', async () => {
+        const blogWithoutLikes = {
+            title: 'assert.deepStrictEqual(actual, expected[, message])',
+            author: 'nodejs',
+            url: 'https://nodejs.org/api/assert.html#assertdeepstrictequalactual-expected-message'
+        }
+
+        const response = await api.post('/api/blogs')
+            .send(blogWithoutLikes)
+            .expect(201)
+            .expect('Content-Type', /application\/json/)
+
+        assert.strictEqual(response.body.likes, 0)
     })
 })
 

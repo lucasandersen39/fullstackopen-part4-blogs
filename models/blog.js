@@ -1,10 +1,21 @@
 const mongoose = require('mongoose')
 
 const blogSchema = new mongoose.Schema({
-    title: String,
-    author: String,
+    title: {
+        type: String,
+        minLength: [3, 'title: the minium allowed length is 3'],
+        required: [true, 'title is required']
+    },
+    author: {
+        type: String,
+        minLength: [3, 'author: the minium allowed length is 3'],
+        required: [true, 'author is required']
+    },
     url: String,
-    likes: Number
+    likes: {
+        type: Number,
+        default: 0
+    }
 })
 
 blogSchema.set('toJSON', {
