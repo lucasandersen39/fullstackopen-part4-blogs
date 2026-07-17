@@ -14,7 +14,8 @@ const blogSchema = new mongoose.Schema({
     url: String,
     likes: {
         type: Number,
-        default: 0
+        default: 0,
+        min: [0, 'the minium allowed is 0']
     }
 })
 

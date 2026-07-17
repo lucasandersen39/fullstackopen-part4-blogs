@@ -148,6 +148,62 @@ describe('BLOGS: DELETE endpoint test', () => {
     })
 })
 
+describe('BLOG: PUT endpoint test', () => {
+    test('Update blog success', async () => {
+        const blogs = await helper.blogsInDB()
+        const blogUpdate = blogs[0]
+
+        const updateInfo = {
+            title: 'New title',
+            author: 'new author',
+            url: 'new url',
+            likes: blogUpdate.likes + 10
+        }
+
+        const result = await api.put(`/api/blogs/${blogUpdate.id}`).send(updateInfo).expect(200)
+
+        updateInfo.id = blogUpdate.id
+        assert.deepStrictEqual(result.body, updateInfo)
+
+        const resultBlog = await api.get(`/api/blogs/${blogUpdate.id}`).expect(200)
+        assert.deepStrictEqual(resultBlog.body, updateInfo)
+    })
+
+    test('Update likes success', async () => {
+        const blogs = await helper.blogsInDB()
+        const blogUpdate = blogs[0]
+        const newLikes = blogUpdate.likes + 10
+        const updateInfo = {
+            title: blogUpdate.title,
+            author: blogUpdate.title,
+            url: blogUpdate.title,
+            likes: newLikes
+        }
+
+        const result = await api.put(`/api/blogs/${blogUpdate.id}`).send(updateInfo).expect(200)
+
+        assert.strictEqual(result.body.likes, newLikes)
+
+        const resultBlog = await api.get(`/api/blogs/${blogUpdate.id}`).expect(200)
+        assert.strictEqual(resultBlog.body.likes, newLikes)
+    })
+
+    test('Update likes with -1 value, return error', async () => {
+        const blogs = await helper.blogsInDB()
+        const blogUpdate = blogs[0]
+
+        const updateInfo = {
+            title: blogUpdate.title,
+            author: blogUpdate.title,
+            url: blogUpdate.title,
+            likes: -1
+        }
+
+        const result = await api.put(`/api/blogs/${blogUpdate.id}`).send(updateInfo).expect(400)
+        assert.strictEqual(result.body.error, 'Validation failed: likes: the minium allowed is 0')
+    })
+})
+
 after(async () => {
     await mongoose.connection.close()
 })
