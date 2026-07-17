@@ -1,10 +1,21 @@
-const { test, after, describe } = require('node:test')
+const { test, after, describe, beforeEach } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
+const helper = require('./blogs_test_helper')
+
+const Blog = require('../models/blog')
 
 const api = supertest(app)
+
+beforeEach(async () => {
+    await Blog.deleteMany({})
+    const blogEntries = helper.blogs_dummy.map(blog => new Blog(blog))
+    const promiseArray = blogEntries.map(blog => blog.save())
+    await Promise.all(promiseArray)
+})
+
 describe('BLOGS: GET endpoint tests', () => {
     test('blogs are returned as json', async () => {
         await api
@@ -20,6 +31,12 @@ describe('BLOGS: GET endpoint tests', () => {
             assert.strictEqual(response.body[0]._id, undefined) // _id identifier is not define
         }
     })
+
+    test('Return all items', async () => {
+        const response = await api.get('/api/blogs').expect(200)
+
+        assert.strictEqual(response.body.length, helper.blogs_dummy.length)
+    })
 })
 
 describe('BLOGS: POST endpoint tests', () => {
@@ -30,9 +47,6 @@ describe('BLOGS: POST endpoint tests', () => {
             url: 'https://fullstackopen.com/es/part4/probando_el_backend#entorno-de-prueba',
             likes: 5,
         }
-        // Before POST
-        const initialResponse = await api.get('/api/blogs')
-        const initialCount = initialResponse.body.length
 
         await api
             .post('/api/blogs')
@@ -42,7 +56,7 @@ describe('BLOGS: POST endpoint tests', () => {
 
         // After POST
         const finalResponse = await api.get('/api/blogs')
-        assert.strictEqual(finalResponse.body.length, initialCount + 1)
+        assert.strictEqual(finalResponse.body.length, helper.blogs_dummy.length + 1)
 
         const titles = finalResponse.body.map(r => r.title)
         assert.ok(titles.includes('Entorno de prueba'))
