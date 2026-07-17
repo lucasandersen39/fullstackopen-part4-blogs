@@ -40,6 +40,22 @@ describe('BLOGS: GET endpoint tests', () => {
     })
 })
 
+describe('BLOGS: GET by ID endpoint test', () => {
+    test('Get blog by id success', async () => {
+        const blogs = await helper.blogsInDB()
+        const blogSearch = blogs[0]
+
+        const result = await api.get(`/api/blogs/${blogSearch.id}`).expect(200).expect('Content-Type', /application\/json/)
+
+        assert.deepStrictEqual(result.body, blogSearch)
+    })
+
+    test('GET blog with non exist ID, return error', async () => {
+        const noExistID = await helper.nonExistingId()
+        await api.get(`/api/blogs/${noExistID}`).expect(404)
+    })
+})
+
 describe('BLOGS: POST endpoint tests', () => {
     test('a valid blog can be added', async () => {
         const newBlog = {
