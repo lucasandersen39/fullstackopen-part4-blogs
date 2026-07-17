@@ -1,4 +1,4 @@
-const { test, after } = require('node:test')
+const { test, after, describe } = require('node:test')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -12,6 +12,13 @@ describe('BLOGS: GET endpoint tests', () => {
             .expect('Content-Type', /application\/json/)
     })
 
+    test('unique identifier property of the blog posts is named id', async () => {
+        const response = await api.get('/api/blogs')
+        if (response.body.length > 0) {
+            expect(response.body[0].id).toBeDefined()
+            expect(response.body[0]._id).not.toBeDefined()
+        }
+    })
 })
 
 after(async () => {
