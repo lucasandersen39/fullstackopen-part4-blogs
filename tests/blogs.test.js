@@ -62,6 +62,36 @@ describe('BLOGS: POST endpoint tests', () => {
 
         assert.strictEqual(response.body.likes, 0)
     })
+
+    test('If the title property is missing, 400 bad request is return', async () => {
+        const blogWithoutTitle = {
+            author: 'mongoose',
+            url: 'https://mongoosejs.com/docs/validation.html#custom-validators',
+            likes: 10
+        }
+
+        const response = await api
+            .post('/api/blogs')
+            .send(blogWithoutTitle)
+            .expect(400)
+
+        assert.strictEqual(response.body.error, 'Blog validation failed: title: title is required')
+    })
+
+    test('If the author property is missing, 400 bad request is return', async () => {
+        const blogWithoutAuthor = {
+            title: 'Custom Validators',
+            url: 'https://mongoosejs.com/docs/validation.html#custom-validators',
+            likes: 10
+        }
+
+        const response = await api
+            .post('/api/blogs')
+            .send(blogWithoutAuthor)
+            .expect(400)
+
+        assert.strictEqual(response.body.error, 'Blog validation failed: author: author is required')
+    })
 })
 
 after(async () => {

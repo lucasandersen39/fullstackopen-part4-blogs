@@ -3,12 +3,12 @@ const mongoose = require('mongoose')
 const blogSchema = new mongoose.Schema({
     title: {
         type: String,
-        minLength: [3, 'title: the minium allowed length is 3'],
+        minLength: [3, ' the minium allowed length is 3'],
         required: [true, 'title is required']
     },
     author: {
         type: String,
-        minLength: [3, 'author: the minium allowed length is 3'],
+        minLength: [3, 'the minium allowed length is 3'],
         required: [true, 'author is required']
     },
     url: String,
