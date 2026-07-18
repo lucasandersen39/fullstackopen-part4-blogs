@@ -1,20 +1,38 @@
-const { test, after, describe, beforeEach } = require('node:test')
+const { test, after, describe, beforeEach, before } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const helper = require('./blogs_test_helper')
+const helperLogin = require('./login_helper')
 
 const Blog = require('../models/blog')
 const blog = require('../models/blog')
 
 const api = supertest(app)
 
+let token = null
+let userId = null
+
+before(async () => {
+    const loginData = await helperLogin.loginUser(api)
+    token = loginData.token
+    userId = loginData.userId
+})
+
 beforeEach(async () => {
     await Blog.deleteMany({})
-    const blogEntries = helper.blogs_dummy.map(blog => new Blog(blog))
+    const blogEntries = helper.blogs_dummy.map(blog => new Blog({ ...blog, user: userId }))
     const promiseArray = blogEntries.map(blog => blog.save())
     await Promise.all(promiseArray)
+})
+
+describe('Verify test environment', () => {
+    test('Verify user exist', async () => {
+        const response = await api.get('/api/users')
+        const usernames = response.body.map(u => u.username)
+        assert.ok(usernames.includes('testuser'))
+    })
 })
 
 describe('BLOGS: GET endpoint tests', () => {
@@ -47,7 +65,8 @@ describe('BLOGS: GET by ID endpoint test', () => {
 
         const result = await api.get(`/api/blogs/${blogSearch.id}`).expect(200).expect('Content-Type', /application\/json/)
 
-        assert.deepStrictEqual(result.body, blogSearch)
+        assert.deepStrictEqual(result.body.title, blogSearch.title)
+        assert.deepStrictEqual(result.body.id.toString(), blogSearch.id.toString())
     })
 
     test('GET blog with non exist ID, return error', async () => {
@@ -59,7 +78,7 @@ describe('BLOGS: GET by ID endpoint test', () => {
 describe('BLOGS: POST endpoint tests', () => {
     test('a valid blog can be added', async () => {
         const newBlog = {
-            title: 'Entorno de prueba',
+            title: 'New Test Blog',
             author: 'Matti Luukkainen',
             url: 'https://fullstackopen.com/es/part4/probando_el_backend#entorno-de-prueba',
             likes: 5,
@@ -67,6 +86,7 @@ describe('BLOGS: POST endpoint tests', () => {
 
         await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(newBlog)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -76,7 +96,7 @@ describe('BLOGS: POST endpoint tests', () => {
         assert.strictEqual(finalResponse.body.length, helper.blogs_dummy.length + 1)
 
         const titles = finalResponse.body.map(r => r.title)
-        assert.ok(titles.includes('Entorno de prueba'))
+        assert.ok(titles.includes('New Test Blog'))
     })
 
     test('If the likes property is missing, It set with default 0', async () => {
@@ -87,6 +107,7 @@ describe('BLOGS: POST endpoint tests', () => {
         }
 
         const response = await api.post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(blogWithoutLikes)
             .expect(201)
             .expect('Content-Type', /application\/json/)
@@ -103,6 +124,7 @@ describe('BLOGS: POST endpoint tests', () => {
 
         const response = await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(blogWithoutTitle)
             .expect(400)
 
@@ -118,10 +140,26 @@ describe('BLOGS: POST endpoint tests', () => {
 
         const response = await api
             .post('/api/blogs')
+            .set('Authorization', `Bearer ${token}`)
             .send(blogWithoutAuthor)
             .expect(400)
 
         assert.strictEqual(response.body.error, 'Blog validation failed: author: author is required')
+    })
+
+    test('If the token is missing, 401 unauthorized is return', async () => {
+        const newBlog = {
+            title: 'New Test Blog',
+            author: 'Test Author',
+            url: 'https://example.com/test-blog',
+            likes: 5
+        }
+
+        const response = await api
+            .post('/api/blogs')
+            .send(newBlog)
+            .expect(401)
+        assert.strictEqual(response.body.error, 'token invalid')
     })
 })
 
@@ -129,7 +167,10 @@ describe('BLOGS: DELETE endpoint test', () => {
     test('delete blog success', async () => {
         const blogsStart = await helper.blogsInDB()
         const blogHelp = blogsStart[0]
-        await api.delete(`/api/blogs/${blogHelp.id}`).expect(204)
+        await api
+            .delete(`/api/blogs/${blogHelp.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .expect(204)
 
         const blogEnd = await helper.blogsInDB()
         const titles = blogEnd.map(b => b.title)
@@ -140,7 +181,10 @@ describe('BLOGS: DELETE endpoint test', () => {
 
     test('delete non existing id, return error', async () => {
         const nonExistID = await helper.nonExistingId()
-        await api.delete(`/api/blogs/${nonExistID}`).expect(204)
+        await api
+            .delete(`/api/blogs/${nonExistID}`)
+            .set('Authorization', `Bearer ${token}`)
+            .expect(404)
 
         const blogEnd = await helper.blogsInDB()
         assert.strictEqual(blogEnd.length, helper.blogs_dummy.length)
@@ -157,16 +201,15 @@ describe('BLOG: PUT endpoint test', () => {
             title: 'New title',
             author: 'new author',
             url: 'new url',
-            likes: blogUpdate.likes + 10
+            likes: blogUpdate.likes + 10,
         }
 
-        const result = await api.put(`/api/blogs/${blogUpdate.id}`).send(updateInfo).expect(200)
-
-        updateInfo.id = blogUpdate.id
-        assert.deepStrictEqual(result.body, updateInfo)
+        await api.put(`/api/blogs/${blogUpdate.id}`).send(updateInfo).expect(200)
 
         const resultBlog = await api.get(`/api/blogs/${blogUpdate.id}`).expect(200)
-        assert.deepStrictEqual(resultBlog.body, updateInfo)
+        assert.strictEqual(resultBlog.body.id, blogUpdate.id)
+        assert.strictEqual(resultBlog.body.title, updateInfo.title)
+        assert.strictEqual(resultBlog.body.author, updateInfo.author)
     })
 
     test('Update likes success', async () => {

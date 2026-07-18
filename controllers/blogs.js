@@ -1,11 +1,10 @@
 const blogsRouter = require('express').Router()
-const jwt = require('jsonwebtoken')
 const Blog = require('../models/blog')
 const User = require('../models/user')
-
+const middleware = require('../utils/middleware')
 blogsRouter.get('/:id', async (request, response, next) => {
     try {
-        const blog = await Blog.findById(request.params.id)
+        const blog = await Blog.findById(request.params.id).populate('user')
         if (blog) {
             response.json(blog)
         } else {
@@ -25,15 +24,13 @@ blogsRouter.get('/', async (request, response, next) => {
     }
 })
 
-blogsRouter.post('/', async (request, response, next) => {
+blogsRouter.post('/', middleware.userExtractor, async (request, response, next) => {
     const blog = new Blog(request.body)
-    const decodedToken = jwt.verify(request.token, process.env.JWT_SECRET)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token invalid' })
-    }
-    const user = await User.findById(decodedToken.id)
-
+    console.log("POST", request.user)
+    const user = await User.findById(request.user)
+    console.log('user', user)
     blog.user = user.id
+    console.log('blog.user', blog.user)
     try {
         const blogSaved = await blog.save()
         user.blogs = user.blogs.concat(blogSaved._id)
@@ -61,18 +58,14 @@ blogsRouter.put('/:id', async (request, response, next) => {
     }
 })
 
-blogsRouter.delete('/:id', async (request, response, next) => {
+blogsRouter.delete('/:id', middleware.userExtractor, async (request, response, next) => {
     const id = request.params.id
-    const decodedToken = jwt.verify(request.token, process.env.JWT_SECRET)
-    if (!decodedToken.id) {
-        return response.status(401).json({ error: 'token invalid' })
-    }
     try {
         const result = await Blog.findById(id)
         if (!result) {
             return response.status(404).end()
         }
-        if (result.user?.toString() === decodedToken.id.toString()) {
+        if (result.user?.toString() === request.user.toString()) {
             await result.deleteOne()
             response.status(204).end()
         } else {
